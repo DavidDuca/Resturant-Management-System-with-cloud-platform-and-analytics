@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jonel's Inasalan — Cashier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<!-- Chart.js — works fully offline on LAN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0F1117; --surface:#171B24; --surface2:#1E2433; --card:#222840;
+  --border:rgba(255,255,255,.07); --border-lt:rgba(255,255,255,.13);
+  --accent:#4A9EFF; --accent2:#7C3AED; --green:#2ECC71; --red:#E74C3C;
+  --gold:#F1C40F; --orange:#F97316; --pink:#EC4899;
+  --text:#E8EAF0; --muted:#6B7280; --radius:10px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;}
+.shell{display:flex;height:100%;}
+
+/* ── Sidebar ── */
+.nav-sidebar{width:210px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.2rem .8rem;}
+.nav-logo{font-family:'IBM Plex Mono',monospace;font-size:.9rem;font-weight:600;padding:.5rem .6rem .2rem;color:var(--accent);line-height:1.3;}
+.nav-logo span{color:var(--text);}
+.nav-tagline{font-size:.6rem;color:var(--muted);padding:0 .6rem .6rem;letter-spacing:1px;}
+.nav-role{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;padding:0 .6rem .8rem;}
+.nav-divider{height:1px;background:var(--border);margin:.4rem 0;}
+.nav-btn{display:flex;align-items:center;gap:.75rem;padding:.7rem .8rem;border-radius:var(--radius);border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:.85rem;font-family:'IBM Plex Sans',sans-serif;font-weight:500;width:100%;text-align:left;transition:all .15s;}
+.nav-btn i{width:16px;text-align:center;}
+.nav-btn:hover{background:var(--surface2);color:var(--text);}
+.nav-btn.active{background:rgba(74,158,255,.12);color:var(--accent);}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.tab-panel{display:none;flex:1;overflow:hidden;}
+.tab-panel.active{display:flex;flex-direction:column;}
+
+/* ══ POS ══ */
+.pos-layout{display:flex;flex:1;overflow:hidden;}
+.pos-left{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);}
+.lookup-bar{padding:1.2rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.75rem;flex-shrink:0;}
+.lookup-bar label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.lookup-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.55rem .9rem;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:1.2rem;letter-spacing:4px;text-align:center;outline:none;transition:border-color .15s;max-width:220px;text-transform:uppercase;}
+.lookup-input:focus{border-color:var(--accent);}
+.btn-lookup{padding:.55rem 1.1rem;border-radius:var(--radius);border:none;background:var(--accent);color:#000;cursor:pointer;font-weight:700;font-size:.85rem;transition:opacity .15s;}
+.btn-lookup:hover{opacity:.85;}
+.order-detail-area{flex:1;overflow-y:auto;padding:1.5rem;}
+.placeholder-msg{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted);gap:.75rem;}
+.placeholder-msg i{font-size:2.5rem;}
+.order-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.order-card-header{padding:1rem 1.2rem;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;}
+.order-id-display{font-family:'IBM Plex Mono',monospace;font-size:1.8rem;font-weight:600;letter-spacing:4px;color:var(--accent);}
+.order-meta{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
+.status-badge{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:.3rem .7rem;border-radius:20px;}
+.status-pending  {background:rgba(241,196,15,.15);color:var(--gold);  border:1px solid rgba(241,196,15,.3);}
+.status-paid     {background:rgba(46,204,113,.15);color:var(--green); border:1px solid rgba(46,204,113,.3);}
+.status-cancelled{background:rgba(231,76,60,.15); color:var(--red);   border:1px solid rgba(231,76,60,.3);}
+.status-preparing{background:rgba(74,158,255,.15);color:var(--accent);border:1px solid rgba(74,158,255,.3);}
+.status-ready    {background:rgba(46,204,113,.15);color:var(--green); border:1px solid rgba(46,204,113,.3);}
+.status-completed{background:rgba(100,116,139,.15);color:var(--muted);border:1px solid rgba(100,116,139,.3);}
+.order-items-table{width:100%;border-collapse:collapse;}
+.order-items-table th{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.75rem 1.2rem;text-align:left;border-bottom:1px solid var(--border);}
+.order-items-table th:last-child{text-align:right;}
+.order-items-table td{padding:.65rem 1.2rem;border-bottom:1px solid var(--border);font-size:.875rem;}
+.order-items-table td:last-child{text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--gold);}
+.order-item-addons{font-size:.72rem;color:var(--muted);margin-top:.15rem;}
+.order-card-footer{padding:1rem 1.2rem;background:var(--surface2);border-top:1px solid var(--border);display:flex;justify-content:flex-end;align-items:center;gap:1.5rem;}
+.total-label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.total-amount{font-family:'IBM Plex Mono',monospace;font-size:1.6rem;font-weight:600;}
+.pos-right{width:300px;flex-shrink:0;display:flex;flex-direction:column;padding:1.2rem;gap:1rem;overflow-y:auto;}
+.section-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:.4rem;}
+.payment-field{margin-bottom:.75rem;}
+.payment-field label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:.3rem;}
+.payment-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .9rem;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:1.1rem;outline:none;transition:border-color .15s;}
+.payment-input:focus{border-color:var(--accent);}
+.change-display{background:var(--card);border-radius:var(--radius);padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);}
+.change-amt{font-family:'IBM Plex Mono',monospace;font-size:1.4rem;font-weight:600;color:var(--green);}
+.btn-confirm{width:100%;padding:.8rem;border-radius:var(--radius);border:none;background:var(--green);color:#000;cursor:pointer;font-weight:700;font-size:.95rem;letter-spacing:.5px;transition:opacity .15s,transform .1s;}
+.btn-confirm:hover{opacity:.88;}.btn-confirm:active{transform:scale(.98);}.btn-confirm:disabled{opacity:.35;cursor:not-allowed;}
+.btn-cancel-order{width:100%;padding:.7rem;border-radius:var(--radius);border:1px solid rgba(231,76,60,.4);background:transparent;color:var(--red);cursor:pointer;font-weight:600;font-size:.85rem;transition:background .15s;}
+.btn-cancel-order:hover{background:rgba(231,76,60,.1);}.btn-cancel-order:disabled{opacity:.3;cursor:not-allowed;}
+.incoming-orders{flex:1;overflow-y:auto;}
+.incoming-title{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:.6rem;}
+.incoming-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.7rem .9rem;margin-bottom:.5rem;cursor:pointer;transition:border-color .15s;}
+.incoming-item:hover{border-color:var(--accent);}
+.incoming-item-id{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;font-weight:600;color:var(--accent);}
+.incoming-item-meta{font-size:.72rem;color:var(--muted);margin-top:.2rem;}
+
+/* ══ HISTORY ══ */
+.history-layout{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.history-toolbar{padding:.85rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.75rem;flex-shrink:0;background:var(--surface);}
+.history-toolbar label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.history-date-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.45rem .75rem;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:.85rem;outline:none;cursor:pointer;}
+.history-date-input:focus{border-color:var(--accent);}
+.history-date-input::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer;}
+.btn-hist-action{padding:.45rem .9rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.78rem;font-weight:600;transition:all .15s;white-space:nowrap;}
+.btn-hist-action:hover{background:var(--surface2);color:var(--text);}
+.history-summary{font-size:.75rem;color:var(--muted);margin-left:auto;white-space:nowrap;}
+.history-table-wrap{flex:1;overflow-y:auto;}
+.history-table{width:100%;border-collapse:collapse;}
+.history-table thead th{position:sticky;top:0;background:var(--surface2);font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.75rem 1rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.history-table tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;}
+.history-table tbody tr:hover{background:var(--surface2);}
+.history-table td{padding:.65rem 1rem;font-size:.85rem;vertical-align:middle;}
+.history-table td.mono{font-family:'IBM Plex Mono',monospace;}
+.hist-pagination{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.5rem;border-top:1px solid var(--border);flex-shrink:0;background:var(--surface);}
+.hist-page-info{font-size:.75rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+.btn-page{padding:.35rem .8rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.8rem;transition:all .15s;}
+.btn-page:hover:not(:disabled){background:var(--surface2);color:var(--text);}
+.btn-page:disabled{opacity:.3;cursor:not-allowed;}
+
+/* ══ ANALYTICS — full redesign ══ */
+#tab-analytics{overflow-y:auto;}
+.a-page{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1.2rem;min-height:100%;}
+
+.a-topbar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.a-title{font-size:1.1rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:.6rem;}
+.a-title i{color:var(--accent);}
+.a-controls{display:flex;align-items:center;gap:.5rem;}
+.a-range-btn{padding:.3rem .75rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.75rem;font-weight:600;transition:all .15s;}
+.a-range-btn.active{background:rgba(74,158,255,.15);color:var(--accent);border-color:rgba(74,158,255,.4);}
+.a-range-btn:hover:not(.active){background:var(--surface2);color:var(--text);}
+.btn-a-refresh{padding:.35rem .8rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.75rem;transition:all .15s;}
+.btn-a-refresh:hover{color:var(--text);border-color:var(--border-lt);}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.1rem;position:relative;overflow:hidden;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;}
+.kpi-card.c-blue::before{background:linear-gradient(90deg,var(--accent),#7dd3fc);}
+.kpi-card.c-green::before{background:linear-gradient(90deg,var(--green),#6ee7b7);}
+.kpi-card.c-gold::before{background:linear-gradient(90deg,var(--gold),#fde68a);}
+.kpi-card.c-purple::before{background:linear-gradient(90deg,var(--accent2),#c4b5fd);}
+.kpi-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:.45rem;}
+.kpi-val{font-family:'IBM Plex Mono',monospace;font-size:1.5rem;font-weight:600;line-height:1;}
+.kpi-sub{font-size:.7rem;color:var(--muted);margin-top:.3rem;display:flex;align-items:center;gap:.3rem;}
+.kpi-trend{font-size:.7rem;font-weight:700;padding:.1rem .35rem;border-radius:4px;}
+.kpi-trend.up{background:rgba(46,204,113,.15);color:var(--green);}
+.kpi-trend.down{background:rgba(231,76,60,.15);color:var(--red);}
+.kpi-trend.flat{background:rgba(107,114,128,.15);color:var(--muted);}
+
+/* Chart cards */
+.chart-row{display:grid;gap:.9rem;}
+.chart-row.cols-2{grid-template-columns:1fr 1fr;}
+.chart-row.cols-3{grid-template-columns:2fr 1fr 1fr;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;display:flex;flex-direction:column;gap:.75rem;}
+.chart-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;}
+.chart-card-title{font-size:.82rem;font-weight:700;color:var(--text);}
+.chart-card-sub{font-size:.68rem;color:var(--muted);margin-top:.15rem;}
+.chart-card-actions{display:flex;gap:.3rem;flex-shrink:0;}
+.chart-type-btn{width:26px;height:26px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.chart-type-btn.active,.chart-type-btn:hover{background:rgba(74,158,255,.15);color:var(--accent);border-color:rgba(74,158,255,.4);}
+.chart-wrap{position:relative;flex:1;min-height:0;}
+.chart-wrap canvas{max-height:220px;}
+
+/* Forecast section — distinct purple panel */
+.forecast-panel{background:linear-gradient(135deg,rgba(124,58,237,.12) 0%,rgba(14,21,33,.0) 100%);border:1px solid rgba(124,58,237,.3);border-radius:var(--radius);padding:1.1rem;}
+.forecast-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;}
+.forecast-title{font-size:.85rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:.5rem;}
+.forecast-title i{color:var(--accent2);}
+.forecast-badge{font-size:.62rem;background:rgba(124,58,237,.2);color:#c4b5fd;border:1px solid rgba(124,58,237,.4);padding:.15rem .5rem;border-radius:20px;letter-spacing:.5px;}
+.forecast-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1rem;}
+.forecast-stat{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:.7rem .9rem;}
+.forecast-stat-label{font-size:.65rem;color:#a78bfa;text-transform:uppercase;letter-spacing:1px;margin-bottom:.25rem;}
+.forecast-stat-val{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;font-weight:600;color:var(--text);}
+.forecast-stat-note{font-size:.65rem;color:var(--muted);margin-top:.15rem;}
+.forecast-chart-wrap{position:relative;}
+.forecast-chart-wrap canvas{max-height:180px;}
+.forecast-disclaimer{font-size:.65rem;color:var(--muted);margin-top:.6rem;text-align:center;}
+
+/* Bestsellers */
+.bs-item{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--border);}
+.bs-item:last-child{border:none;}
+.bs-rank{font-family:'IBM Plex Mono',monospace;font-size:.85rem;font-weight:600;width:22px;flex-shrink:0;color:var(--muted);}
+.bs-rank.gold{color:var(--gold);}
+.bs-rank.silver{color:#94a3b8;}
+.bs-rank.bronze{color:#92400e;}
+.bs-bar-wrap{flex:1;}
+.bs-name{font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:.25rem;}
+.bs-bar-track{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.bs-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.bs-meta{font-size:.68rem;color:var(--muted);margin-top:.2rem;}
+.bs-right{text-align:right;flex-shrink:0;}
+.bs-qty{font-family:'IBM Plex Mono',monospace;font-size:.85rem;font-weight:600;color:var(--accent);}
+.bs-rev{font-size:.68rem;color:var(--gold);font-family:'IBM Plex Mono',monospace;}
+
+/* ══ ADMIN ══ */
+.admin-layout{flex:1;display:flex;overflow:hidden;}
+.admin-list-pane{width:300px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.admin-list-header{padding:.9rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);flex-shrink:0;}
+.admin-list-header-title{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;}
+.btn-add-product{padding:.4rem .9rem;border-radius:6px;border:none;background:var(--accent);color:#000;cursor:pointer;font-weight:700;font-size:.78rem;}
+.admin-cat-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.admin-cat-tab{flex:1;padding:.55rem;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid transparent;transition:all .15s;}
+.admin-cat-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(74,158,255,.06);}
+.admin-product-list{flex:1;overflow-y:auto;}
+.admin-product-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;}
+.admin-product-item:hover{background:var(--surface2);}
+.admin-product-item.selected{background:rgba(74,158,255,.1);border-left:3px solid var(--accent);}
+.admin-product-thumb{width:40px;height:40px;border-radius:8px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.admin-product-thumb img{width:100%;height:100%;object-fit:cover;}
+.admin-product-thumb i{font-size:.9rem;color:var(--muted);}
+.admin-product-info{flex:1;min-width:0;}
+.admin-product-name{font-size:.85rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.admin-product-price{font-size:.75rem;color:var(--gold);font-family:'IBM Plex Mono',monospace;}
+.admin-product-stock{font-size:.65rem;padding:.1rem .4rem;border-radius:10px;}
+.stock-in{background:rgba(46,204,113,.15);color:var(--green);}
+.stock-out{background:rgba(231,76,60,.15);color:var(--red);}
+.admin-form-pane{flex:1;overflow-y:auto;padding:1.5rem;}
+.admin-form-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted);gap:.75rem;}
+.admin-form-placeholder i{font-size:2.5rem;}
+.admin-form h3{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:1.2rem;padding-bottom:.6rem;border-bottom:1px solid var(--border);}
+.form-row{margin-bottom:1rem;}
+.form-row label{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:.35rem;}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .9rem;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .15s;}
+.form-textarea{resize:vertical;min-height:80px;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
+.form-select option{background:var(--surface2);}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative;}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:rgba(74,158,255,.05);}
+.drop-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.drop-zone-icon{font-size:1.8rem;color:var(--muted);margin-bottom:.5rem;}
+.drop-zone-text{font-size:.8rem;color:var(--muted);line-height:1.5;}
+.drop-zone-preview{width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:.75rem;display:none;}
+.form-check-row{display:flex;align-items:center;gap:.75rem;}
+.form-check-row label{margin:0;font-size:.85rem;color:var(--text);text-transform:none;letter-spacing:0;}
+input[type="checkbox"].form-check{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+.admin-form-actions{display:flex;gap:.75rem;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);}
+.btn-save{flex:1;padding:.75rem;border-radius:var(--radius);border:none;background:var(--accent);color:#000;cursor:pointer;font-weight:700;font-size:.9rem;transition:opacity .15s;}
+.btn-save:hover{opacity:.85;}
+.btn-delete{padding:.75rem 1.2rem;border-radius:var(--radius);border:1px solid rgba(231,76,60,.4);background:transparent;color:var(--red);cursor:pointer;font-weight:600;font-size:.85rem;transition:background .15s;}
+.btn-delete:hover{background:rgba(231,76,60,.1);}
+.btn-new-clear{padding:.75rem 1rem;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.85rem;transition:background .15s;}
+.btn-new-clear:hover{background:var(--surface2);}
+
+/* Shared */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem 1.1rem;font-size:.85rem;display:flex;align-items:center;gap:.6rem;transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{border-color:rgba(46,204,113,.4);}
+.toast.error  {border-color:rgba(231,76,60,.4);}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+<link rel="stylesheet" href="/css/theme-light.css"></head>
+<body>
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <nav class="nav-sidebar">
+    <div class="nav-logo">Jonel's <span>Inasalan</span></div>
+    <div class="nav-tagline">Sizzling &amp; Grill</div>
+    <div class="nav-role">Cashier Station</div>
+    <div class="nav-divider"></div>
+    <button class="nav-btn active" data-tab="pos"><i class="fa-solid fa-cash-register"></i> Point of Sale</button>
+    <button class="nav-btn" data-tab="history"><i class="fa-solid fa-clock-rotate-left"></i> Order History</button>
+    <button class="nav-btn" data-tab="analytics"><i class="fa-solid fa-chart-line"></i> Analytics</button>
+    <button class="nav-btn" data-tab="admin"><i class="fa-solid fa-screwdriver-wrench"></i> Admin</button>
+    <div class="nav-divider" style="margin-top:auto"></div>
+    <div id="clock" style="padding:.6rem;font-size:.7rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;"></div>
+  </nav>
+
+  <div class="main">
+
+    <!-- ══ POS ══ -->
+    <div class="tab-panel active" id="tab-pos">
+      <div class="pos-layout">
+        <div class="pos-left">
+          <div class="lookup-bar">
+            <label><i class="fa-solid fa-magnifying-glass" style="margin-right:.4rem"></i>Order ID</label>
+            <input type="text" class="lookup-input" id="lookup-input" maxlength="6" placeholder="A3X9K2" autocomplete="off">
+            <button class="btn-lookup" id="btn-lookup">Fetch</button>
+          </div>
+          <div class="order-detail-area" id="order-detail-area">
+            <div class="placeholder-msg">
+              <i class="fa-regular fa-rectangle-list"></i>
+              <p>Enter the Order ID printed on the customer's receipt</p>
+            </div>
+          </div>
+        </div>
+        <div class="pos-right">
+          <div>
+            <div class="section-label">Payment</div>
+            <div class="payment-field"><label>Order Total</label><input type="text" class="payment-input" id="pay-total" readonly placeholder="₱0.00"></div>
+            <div class="payment-field"><label>Cash Received</label><input type="number" class="payment-input" id="pay-cash" placeholder="0.00" min="0" step="0.01"></div>
+            <div class="change-display"><span class="section-label" style="margin:0">Change Due</span><span class="change-amt" id="pay-change">₱0.00</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <button class="btn-confirm" id="btn-confirm" disabled><i class="fa-solid fa-check" style="margin-right:.4rem"></i>Confirm Payment</button>
+            <button class="btn-cancel-order" id="btn-cancel" disabled><i class="fa-solid fa-xmark" style="margin-right:.4rem"></i>Cancel Order</button>
+          </div>
+          <div class="incoming-orders">
+            <div class="incoming-title"><i class="fa-solid fa-inbox" style="margin-right:.4rem"></i>Pending Orders</div>
+            <div id="incoming-list"><div style="color:var(--muted);font-size:.8rem;padding:.5rem 0">No pending orders</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HISTORY ══ -->
+    <div class="tab-panel" id="tab-history">
+      <div class="history-layout">
+        <div class="history-toolbar">
+          <label><i class="fa-solid fa-calendar-days" style="margin-right:.4rem"></i>Date</label>
+          <input type="date" class="history-date-input" id="history-date">
+          <button class="btn-hist-action" id="btn-clear-date"><i class="fa-solid fa-xmark" style="margin-right:.3rem"></i>Clear</button>
+          <span class="history-summary" id="history-summary"></span>
+        </div>
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead><tr><th>Order ID</th><th>Cust. No.</th><th>Items</th><th>Total</th><th>Status</th><th>Date &amp; Time</th></tr></thead>
+            <tbody id="history-tbody"><tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--muted)">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="hist-pagination">
+          <button class="btn-page" id="hist-prev" disabled><i class="fa-solid fa-chevron-left"></i> Prev</button>
+          <span class="hist-page-info" id="hist-page-info">—</span>
+          <button class="btn-page" id="hist-next" disabled>Next <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ANALYTICS ══ -->
+    <div class="tab-panel" id="tab-analytics">
+      <div class="a-page">
+
+        <!-- Top bar -->
+        <div class="a-topbar">
+          <div class="a-title"><i class="fa-solid fa-chart-line"></i> Sales Intelligence Dashboard</div>
+          <div class="a-controls">
+            <button class="a-range-btn" data-range="7">7D</button>
+            <button class="a-range-btn active" data-range="30">30D</button>
+            <button class="a-range-btn" data-range="90">90D</button>
+            <button class="btn-a-refresh" id="btn-a-refresh"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+          </div>
+        </div>
+
+        <!-- KPI row -->
+        <div class="kpi-row">
+          <div class="kpi-card c-green">
+            <div class="kpi-label">Today's Revenue</div>
+            <div class="kpi-val" id="kpi-today">—</div>
+            <div class="kpi-sub" id="kpi-today-sub"><span class="kpi-trend flat" id="kpi-today-trend">—</span> vs yesterday</div>
+          </div>
+          <div class="kpi-card c-blue">
+            <div class="kpi-label">Period Revenue</div>
+            <div class="kpi-val" id="kpi-period">—</div>
+            <div class="kpi-sub" id="kpi-period-sub">— orders</div>
+          </div>
+          <div class="kpi-card c-gold">
+            <div class="kpi-label">Avg Order Value</div>
+            <div class="kpi-val" id="kpi-aov">—</div>
+            <div class="kpi-sub">per transaction</div>
+          </div>
+          <div class="kpi-card c-purple">
+            <div class="kpi-label">Peak Hour Today</div>
+            <div class="kpi-val" id="kpi-peak">—</div>
+            <div class="kpi-sub" id="kpi-peak-sub">— orders that hour</div>
+          </div>
+        </div>
+
+        <!-- Row 1: Revenue timeline (big) + Category donut -->
+        <div class="chart-row cols-3">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">Revenue Timeline</div>
+                <div class="chart-card-sub" id="rev-chart-sub">Daily revenue — last 30 days</div>
+              </div>
+              <div class="chart-card-actions">
+                <button class="chart-type-btn active" data-chart="revenue-chart" data-type="line" title="Line"><i class="fa-solid fa-chart-line"></i></button>
+                <button class="chart-type-btn" data-chart="revenue-chart" data-type="bar" title="Bar"><i class="fa-solid fa-chart-bar"></i></button>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="revenue-chart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">Revenue by Category</div>
+                <div class="chart-card-sub">Grills · Drinks · Sides</div>
+              </div>
+              <div class="chart-card-actions">
+                <button class="chart-type-btn active" data-chart="cat-chart" data-type="doughnut" title="Donut"><i class="fa-solid fa-circle-half-stroke"></i></button>
+                <button class="chart-type-btn" data-chart="cat-chart" data-type="pie" title="Pie"><i class="fa-solid fa-chart-pie"></i></button>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="cat-chart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Row 2: Order count + Hourly heatmap -->
+        <div class="chart-row cols-2">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">Daily Order Count</div>
+                <div class="chart-card-sub">Number of orders per day</div>
+              </div>
+              <div class="chart-card-actions">
+                <button class="chart-type-btn active" data-chart="orders-chart" data-type="bar" title="Bar"><i class="fa-solid fa-chart-bar"></i></button>
+                <button class="chart-type-btn" data-chart="orders-chart" data-type="line" title="Line"><i class="fa-solid fa-chart-line"></i></button>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="orders-chart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">Today — Hourly Revenue</div>
+                <div class="chart-card-sub">Revenue per hour of operation</div>
+              </div>
+              <div class="chart-card-actions">
+                <button class="chart-type-btn active" data-chart="hourly-chart" data-type="bar" title="Bar"><i class="fa-solid fa-chart-bar"></i></button>
+                <button class="chart-type-btn" data-chart="hourly-chart" data-type="line" title="Line"><i class="fa-solid fa-chart-line"></i></button>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="hourly-chart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Row 3: Bestsellers + Avg Order Value trend -->
+        <div class="chart-row cols-2">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">Top Bestsellers</div>
+                <div class="chart-card-sub">By units sold in period</div>
+              </div>
+              <div class="chart-card-actions">
+                <button class="chart-type-btn active" data-chart="bs-chart" data-type="bar" title="Bar"><i class="fa-solid fa-chart-bar"></i></button>
+                <button class="chart-type-btn" data-chart="bs-chart" data-type="horizontalBar" title="Horizontal"><i class="fa-solid fa-bars-staggered"></i></button>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="bs-chart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title">Bestsellers Detail</div>
+            <div id="bs-list" style="flex:1;overflow-y:auto;"></div>
+          </div>
+        </div>
+
+        <!-- ── FORECASTING SECTION — separate distinct panel ── -->
+        <div class="forecast-panel">
+          <div class="forecast-header">
+            <div class="forecast-title">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              Revenue Forecast
+              <span class="forecast-badge">AI LINEAR REGRESSION</span>
+            </div>
+            <button class="btn-a-refresh" id="btn-forecast-refresh" style="font-size:.72rem;"><i class="fa-solid fa-rotate-right"></i> Recalculate</button>
+          </div>
+          <div class="forecast-meta">
+            <div class="forecast-stat">
+              <div class="forecast-stat-label">Next 7-Day Projected</div>
+              <div class="forecast-stat-val" id="fc-7d">—</div>
+              <div class="forecast-stat-note">Based on trend slope</div>
+            </div>
+            <div class="forecast-stat">
+              <div class="forecast-stat-label">Trend Direction</div>
+              <div class="forecast-stat-val" id="fc-trend">—</div>
+              <div class="forecast-stat-note">Revenue per day</div>
+            </div>
+            <div class="forecast-stat">
+              <div class="forecast-stat-label">Confidence (R²)</div>
+              <div class="forecast-stat-val" id="fc-r2">—</div>
+              <div class="forecast-stat-note">Model fit quality</div>
+            </div>
+          </div>
+          <div class="forecast-chart-wrap">
+            <canvas id="forecast-chart"></canvas>
+          </div>
+          <div class="forecast-disclaimer">
+            Forecast uses linear regression on the last 14 days of actual data. Accuracy improves with more historical data. Not a guarantee of future performance.
+          </div>
+        </div>
+
+      </div><!-- /a-page -->
+    </div>
+
+    <!-- ══ ADMIN ══ -->
+    <div class="tab-panel" id="tab-admin">
+      <div class="admin-layout">
+        <div class="admin-list-pane">
+          <div class="admin-list-header">
+            <span class="admin-list-header-title">Products</span>
+            <button class="btn-add-product" id="btn-new-product">+ New</button>
+          </div>
+          <div class="admin-cat-tabs">
+            <button class="admin-cat-tab active" data-admincat="grills">Grills</button>
+            <button class="admin-cat-tab" data-admincat="nonGrilled">Non-Grilled</button>
+            <button class="admin-cat-tab" data-admincat="drinks">Drinks</button>
+            <button class="admin-cat-tab" data-admincat="sides">Sides</button>
+          </div>
+          <div class="admin-product-list" id="admin-product-list">
+            <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:.8rem">Loading...</div>
+          </div>
+        </div>
+        <div class="admin-form-pane" id="admin-form-pane">
+          <div class="admin-form-placeholder">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <p>Select a product to edit, or click New</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/cashier.js"></script>
+</body>
+</html>

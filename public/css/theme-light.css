@@ -1,0 +1,485 @@
+/* =====================================================================
+   GrillSync — LIGHT KIOSK / POS / KDS THEME  (v2 — modernized)
+   ---------------------------------------------------------------------
+   Loaded LAST in every page <head> so its tokens + rules override the
+   page-specific styles WITHOUT touching their markup or JS.
+   ---------------------------------------------------------------------
+   Goals of v2:
+     • Modern restaurant POS look (Toast / Square inspired)
+     • Bigger touch targets, bigger type, higher contrast
+     • Softer light surfaces (no harsh pure white) + elevated cards
+     • TV board readable from across the room
+     • Kitchen / Grill tickets scannable at a glance
+     • Kiosk feels friendly and fast
+   ===================================================================== */
+
+:root {
+  /* ── Surfaces (soft, never pure white) ──────────────────────────── */
+  --bg:        #EEF2F7;   /* page background — cool soft gray */
+  --surface:   #FFFFFF;   /* primary panels */
+  --surface2:  #F1F5FA;   /* secondary panels / inputs */
+  --card:      #FFFFFF;
+  --border:    rgba(15, 23, 42, 0.10);
+  --border-lt: rgba(15, 23, 42, 0.16);
+
+  /* ── Text (high contrast) ───────────────────────────────────────── */
+  --text:      #0B1220;
+  --muted:     #56657A;
+
+  /* ── Brand / accents ────────────────────────────────────────────── */
+  --accent:    #0B66E4;   /* primary blue */
+  --accent2:   #1E88E5;
+  --green:     #16A34A;   /* go / paid / ready */
+  --red:       #DC2626;   /* cancel / destructive */
+  --gold:      #F59E0B;
+  --orange:    #EA580C;   /* preparing / grill */
+  --yellow:    #EAB308;
+  --purple:    #7C3AED;
+  --pink:      #EC4899;
+
+  /* ── Station tints ──────────────────────────────────────────────── */
+  --col-grill-prep:  #FFF1E0;
+  --col-grill-ready: #E6F8EE;
+  --col-kit-prep:    #ECF1FF;
+  --col-kit-ready:   #E1F6EA;
+
+  /* ── Geometry / motion ──────────────────────────────────────────── */
+  --radius:    14px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
+  --shadow:    0 2px 4px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+  --shadow-md: 0 4px 10px rgba(15,23,42,.08), 0 16px 40px rgba(15,23,42,.08);
+  --ease:      cubic-bezier(.22,1,.36,1);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   GLOBAL BASELINE
+   ─────────────────────────────────────────────────────────────────── */
+html, body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+* { scrollbar-color: rgba(15,23,42,.22) transparent; }
+::-webkit-scrollbar { width:10px; height:10px; }
+::-webkit-scrollbar-thumb { background: rgba(15,23,42,.18); border-radius:8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(15,23,42,.28); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Selection */
+::selection { background: rgba(11,102,228,.18); color: var(--text); }
+
+/* Focus-visible — accessibility */
+button:focus-visible, a:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(11,102,228,.45);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Hide removed analytics tab (kept from v1) */
+.nav-btn[data-tab="analytics"], #tab-analytics { display: none !important; }
+.history-date-input::-webkit-calendar-picker-indicator { filter: none !important; }
+
+/* ───────────────────────────────────────────────────────────────────
+   CASHIER — Header / nav / cards / buttons / modals
+   ─────────────────────────────────────────────────────────────────── */
+.nav, .header, .top-bar {
+  background: var(--surface) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-sm);
+}
+.nav-btn {
+  color: var(--muted) !important;
+  font-weight: 600 !important;
+  letter-spacing:.4px;
+  padding:.7rem 1.1rem !important;
+  border-radius: 10px !important;
+  transition: background .15s var(--ease), color .15s var(--ease);
+}
+.nav-btn:hover { background: rgba(11,102,228,.06) !important; color: var(--text) !important; }
+.nav-btn.active {
+  background: rgba(11,102,228,.10) !important;
+  color: var(--accent) !important;
+}
+
+/* Generic buttons in cashier */
+.btn-lookup, .btn-confirm, .btn-save, .btn-add-product, .btn-place-order,
+.btn-start, .btn-cart, .btn-add-cart, .btn-new-order {
+  font-weight: 700 !important;
+  letter-spacing:.4px;
+  border-radius: 12px !important;
+  transition: transform .08s var(--ease), box-shadow .15s var(--ease), filter .15s var(--ease) !important;
+  box-shadow: var(--shadow-sm);
+}
+.btn-lookup, .btn-save, .btn-add-product {
+  color: #FFFFFF !important;
+  background: var(--accent) !important;
+}
+.btn-confirm, .btn-place-order, .btn-new-order {
+  color: #FFFFFF !important;
+  background: var(--green) !important;
+}
+.btn-lookup:hover, .btn-confirm:hover, .btn-save:hover,
+.btn-add-product:hover, .btn-place-order:hover, .btn-new-order:hover {
+  filter: brightness(1.06);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.btn-lookup:active, .btn-confirm:active, .btn-save:active,
+.btn-add-product:active, .btn-place-order:active { transform: translateY(0) scale(.98); }
+
+.btn-delete { background:#FEE2E2 !important; color:var(--red) !important; font-weight:700 !important; border-radius:12px !important; }
+.btn-delete:hover { background: var(--red) !important; color:#fff !important; }
+
+/* Cards / panels */
+.card, .panel, .a-card, .stat-card, .chart-card,
+.admin-layout, .admin-list-pane, .admin-form-pane {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-sm);
+}
+.stat-card:hover, .chart-card:hover { box-shadow: var(--shadow); }
+
+/* Admin category tabs — bigger, clearer */
+.admin-cat-tabs { gap: 2px; background: var(--surface2); padding: 4px; border-radius: 12px 12px 0 0; }
+.admin-cat-tab {
+  padding: .85rem .5rem !important;
+  font-size: .82rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px;
+  border-radius: 8px !important;
+  border-bottom: none !important;
+  color: var(--muted) !important;
+  transition: all .15s var(--ease);
+}
+.admin-cat-tab:hover { background: rgba(11,102,228,.06); color: var(--text) !important; }
+.admin-cat-tab.active {
+  background: var(--surface) !important;
+  color: var(--accent) !important;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Admin product list rows — bigger touch area */
+.admin-product-item {
+  padding: .85rem .9rem !important;
+  border-radius: 10px !important;
+  transition: background .12s var(--ease);
+}
+.admin-product-item:hover { background: rgba(11,102,228,.05) !important; }
+.admin-product-item.selected { background: rgba(11,102,228,.10) !important; box-shadow: inset 3px 0 0 var(--accent); }
+.admin-product-name { font-weight: 700 !important; font-size:.95rem !important; }
+.admin-product-price { font-size:.82rem !important; }
+.admin-product-stock {
+  padding: 2px 8px; border-radius: 999px; font-size:.65rem;
+  font-weight: 700; letter-spacing:.5px; text-transform: uppercase;
+}
+.stock-in  { background: #DCFCE7; color: #166534; }
+.stock-out { background: #FEE2E2; color: #991B1B; }
+
+/* Form inputs */
+.form-input, .form-select, .form-textarea {
+  background: var(--surface) !important;
+  border: 1.5px solid var(--border-lt) !important;
+  color: var(--text) !important;
+  border-radius: 10px !important;
+  padding: .75rem .9rem !important;
+  font-size: .95rem !important;
+  transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(11,102,228,.15);
+  outline: none;
+}
+.form-row label { font-weight: 600 !important; color: var(--text) !important; font-size:.78rem; letter-spacing:.3px; }
+
+/* Drop-zone */
+.drop-zone {
+  background: var(--surface2) !important;
+  border: 2px dashed var(--border-lt) !important;
+  border-radius: 12px !important;
+  transition: border-color .15s var(--ease), background .15s var(--ease);
+}
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: var(--accent) !important;
+  background: rgba(11,102,228,.04) !important;
+}
+
+/* Toasts */
+.toast {
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-md) !important;
+  font-weight: 600 !important;
+  padding: .9rem 1.2rem !important;
+}
+
+/* Modal overlays */
+.modal-overlay, .cart-overlay {
+  background: rgba(15,23,42,.45) !important;
+  backdrop-filter: blur(6px);
+}
+.modal-sheet, .cart-panel {
+  background: var(--surface) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   KIOSK — Product grid, category nav, cart, modal
+   ─────────────────────────────────────────────────────────────────── */
+.sidebar {
+  background: var(--surface) !important;
+  border-right: 1px solid var(--border) !important;
+  box-shadow: 2px 0 12px rgba(15,23,42,.04);
+}
+.sidebar-label { color: var(--muted) !important; font-weight: 700 !important; letter-spacing: 2px; }
+.cat-btn {
+  color: var(--muted) !important;
+  font-weight: 700 !important;
+  font-size: 1.02rem !important;
+  padding: 1.05rem .9rem !important;
+  border-radius: 14px !important;
+  letter-spacing:.3px;
+  transition: background .15s var(--ease), color .15s var(--ease), transform .08s var(--ease);
+}
+.cat-btn:hover { background: rgba(11,102,228,.06) !important; color: var(--text) !important; }
+.cat-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2)) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 16px rgba(11,102,228,.30);
+}
+
+.menu-area { background: var(--bg) !important; }
+.menu-grid {
+  gap: 1.25rem !important;
+  padding: 1.25rem !important;
+}
+.menu-grid .menu-card, .menu-card {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: transform .15s var(--ease), box-shadow .2s var(--ease);
+}
+.menu-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+.menu-card .menu-name, .menu-name { font-weight: 800 !important; font-size: 1.1rem !important; color: var(--text) !important; }
+.menu-card .menu-price, .menu-price { color: var(--accent) !important; font-weight: 800 !important; font-size: 1.15rem !important; }
+
+/* Cart panel */
+.cart-header { border-bottom: 1px solid var(--border) !important; }
+.cart-header-title { font-weight: 800 !important; font-size: 1.25rem !important; letter-spacing:.3px; }
+.cart-badge {
+  background: var(--accent) !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 10px rgba(11,102,228,.35);
+}
+.btn-cart {
+  background: linear-gradient(135deg, var(--accent), var(--accent2)) !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  border-radius: 999px !important;
+  padding: .9rem 1.3rem !important;
+  box-shadow: 0 8px 22px rgba(11,102,228,.32);
+}
+.btn-place-order { font-size: 1.1rem !important; padding: 1.1rem 1.4rem !important; }
+
+/* Quantity controls — bigger touch */
+.qty-btn {
+  width: 44px !important; height: 44px !important;
+  border-radius: 12px !important;
+  background: var(--surface2) !important;
+  color: var(--text) !important;
+  font-size: 1.2rem !important;
+  font-weight: 800 !important;
+  transition: background .12s var(--ease);
+}
+.qty-btn:hover { background: rgba(11,102,228,.10) !important; }
+.qty-display { font-size: 1.25rem !important; font-weight: 800 !important; min-width: 32px; text-align:center; }
+
+/* ───────────────────────────────────────────────────────────────────
+   KITCHEN + GRILL DISPLAYS (KDS)
+   Re-skinned for light theme; bigger tickets, sharper contrast.
+   ─────────────────────────────────────────────────────────────────── */
+body:has(#kitchen-grid) .header,
+body:has(.kitchen-grid) .header {
+  background: var(--surface) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 1rem 1.4rem !important;
+  box-shadow: var(--shadow-sm);
+}
+.header-logo { font-size: 1.45rem !important; color: var(--text) !important; }
+.header-logo span { color: var(--orange) !important; }
+.header-role { color: var(--muted) !important; font-size: .72rem !important; font-weight: 700 !important; }
+.hstat-val { font-size: 1.75rem !important; }
+.hstat-val.orange { color: var(--orange) !important; }
+.hstat-val.green  { color: var(--green) !important; }
+.hstat-label { color: var(--muted) !important; font-size: .68rem !important; font-weight: 700 !important; }
+.clock { color: var(--text) !important; font-size: 1.35rem !important; font-weight: 600 !important; }
+
+.kitchen-grid {
+  background: var(--bg) !important;
+  gap: 1.1rem !important;
+  padding: 1.1rem !important;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+}
+
+.order-card {
+  background: var(--surface) !important;
+  border: 2px solid var(--border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: box-shadow .2s var(--ease), transform .15s var(--ease);
+}
+.order-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+
+.order-card[data-status="paid"]      { border-color: rgba(234,179,8,.55) !important; }
+.order-card[data-status="preparing"] { border-color: rgba(234,88,12,.65) !important; }
+.order-card[data-status="ready"]     { border-color: rgba(22,163,74,.65) !important; background: #F0FBF4 !important; }
+
+.card-header[data-status="paid"]      { background: #FEF9C3 !important; }
+.card-header[data-status="preparing"] { background: #FFEAD8 !important; }
+.card-header[data-status="ready"]     { background: #DCFCE7 !important; }
+.card-header { padding: 1rem 1.15rem !important; }
+
+/* .card-custno — visual hierarchy lives in kitchen.html + grill.html */
+.card-time    { color: var(--muted) !important; font-size: .78rem !important; font-weight: 600; }
+.card-elapsed { color: var(--orange) !important; font-size: .9rem !important; font-weight: 800 !important; }
+
+.card-items { padding: .85rem 1.15rem !important; }
+.card-item  { padding: .55rem 0 !important; font-size: 1rem !important; border-bottom-color: var(--border) !important; }
+.card-item-name { color: var(--text) !important; font-weight: 700 !important; font-size: 1.02rem !important; }
+.card-item-qty  { color: var(--orange) !important; font-size: 1.35rem !important; font-weight: 800 !important; }
+.card-item-addons { color: var(--muted) !important; font-size: .82rem !important; }
+
+.card-actions { padding: .9rem 1.15rem 1rem !important; gap: .7rem !important; }
+.btn-action {
+  padding: 1.05rem !important;
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px;
+  border-radius: 12px !important;
+  text-transform: uppercase;
+  transition: filter .12s var(--ease), transform .08s var(--ease);
+}
+.btn-preparing {
+  background: #FFEAD8 !important;
+  color: var(--orange) !important;
+  border: 2px solid rgba(234,88,12,.40) !important;
+}
+.btn-preparing.active, .btn-preparing:hover {
+  background: var(--orange) !important; color: #FFFFFF !important; border-color: var(--orange) !important;
+}
+.btn-ready {
+  background: #DCFCE7 !important;
+  color: var(--green) !important;
+  border: 2px solid rgba(22,163,74,.40) !important;
+}
+.btn-ready.active, .btn-ready:hover {
+  background: var(--green) !important; color: #FFFFFF !important; border-color: var(--green) !important;
+}
+
+.ready-bar-wrap { background: rgba(22,163,74,.18) !important; height: 6px !important; }
+.ready-bar      { background: var(--green) !important; }
+
+.empty-state    { color: var(--muted) !important; }
+.empty-state i  { color: var(--accent) !important; opacity: .55; }
+.empty-state p  { font-weight: 700; }
+
+/* GRILL — subtle differentiator from kitchen */
+body:has(.kitchen-grid) .header-logo span,
+[data-area-label*="Grill"i] ~ .header-logo span { color: var(--orange) !important; }
+.kitchen-grid .order-card[data-status="preparing"]::before {
+  /* a hint stripe for visual priority */
+  content: ""; display:block; height: 4px;
+  background: linear-gradient(90deg, var(--orange), var(--gold));
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   TV DISPLAY BOARD
+   The customer TVs (tv.html, nongrilledTv.html) are fully self-contained
+   dark-theme screens. The global light theme does NOT override them.
+   ─────────────────────────────────────────────────────────────────── */
+/* (no rules — see public/tv.html and public/nongrilledTv.html) */
+
+/* ───────────────────────────────────────────────────────────────────
+   RESPONSIVE TWEAKS
+   ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .menu-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important; }
+}
+@media (max-width: 768px) {
+  .nav-btn { padding: .55rem .8rem !important; font-size: .85rem !important; }
+  .card-custno { font-size: 1.75rem !important; }
+  .col-title { font-size: 1.1rem !important; }
+  }
+@media (min-width: 1920px) {
+  /* True TV mode — keep readable from afar without dominating tiles */
+  .col-title { font-size: 1.7rem !important; }
+  .order-tile { font-size: clamp(2rem, 2.4vw, 2.8rem) !important; min-height: 90px; }
+  .tv-body { grid-template-rows: 54px 1fr 54px 1fr !important; }
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   CASHIER — STRONGER INPUT VISIBILITY (borders + shadows)
+   ─────────────────────────────────────────────────────────────────── */
+.cashier-page input:not([type="checkbox"]):not([type="radio"]),
+.cashier-page select,
+.cashier-page textarea,
+body:has(.admin-cat-tabs) input:not([type="checkbox"]):not([type="radio"]),
+body:has(.admin-cat-tabs) select,
+body:has(.admin-cat-tabs) textarea,
+.admin-form input:not([type="checkbox"]):not([type="radio"]),
+.admin-form select,
+.admin-form textarea,
+input.cash-input, input.search-input, input.qty-input,
+input#af-name, input#af-price, input#af-stock,
+select#af-category, textarea#af-desc {
+  background: #FFFFFF !important;
+  border: 2px solid #CBD5E1 !important;
+  border-radius: 10px !important;
+  padding: .7rem .9rem !important;
+  font-size: 1rem !important;
+  color: var(--text) !important;
+  box-shadow:
+    0 1px 0 rgba(15,23,42,.04) inset,
+    0 2px 6px rgba(15,23,42,.06),
+    0 1px 2px rgba(15,23,42,.04) !important;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  outline: none;
+}
+.cashier-page input:focus, .cashier-page select:focus, .cashier-page textarea:focus,
+.admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus,
+input.cash-input:focus, input.search-input:focus, input.qty-input:focus,
+input#af-name:focus, input#af-price:focus, input#af-stock:focus,
+select#af-category:focus, textarea#af-desc:focus {
+  border-color: var(--accent) !important;
+  box-shadow:
+    0 0 0 4px rgba(11,102,228,.18),
+    0 4px 12px rgba(11,102,228,.18) !important;
+}
+.cashier-page input::placeholder,
+.admin-form input::placeholder,
+.admin-form textarea::placeholder { color: #94A3B8 !important; font-weight: 500; }
+
+.cashier-page input[type="checkbox"],
+.admin-form input[type="checkbox"] {
+  width: 20px !important; height: 20px !important;
+  border: 2px solid #94A3B8 !important; border-radius: 4px !important;
+  accent-color: var(--accent);
+  box-shadow: 0 1px 2px rgba(15,23,42,.1) !important;
+}
+
+.admin-form label, .cashier-page label {
+  font-weight: 700 !important; color: #1E293B !important;
+  font-size: .85rem !important; letter-spacing: .5px;
+  text-transform: uppercase;
+  display: block; margin-bottom: .35rem;
+}
+.admin-form .form-row, .admin-form > div { margin-bottom: .85rem; }

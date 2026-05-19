@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Jonel's Inasalan — Kitchen Display</title>
+<style>
+  :root {
+    --bg:        #0E1116;
+    --surface:   #161A21;
+    --surface-2: #1C212A;
+    --line:      rgba(255,255,255,0.07);
+    --line-2:    rgba(255,255,255,0.13);
+    --text:      #E8ECF1;
+    --muted:     #7B8794;
+    --accent:    #5B6BFF;
+    --accent-soft:rgba(91,107,255,.10);
+    --preparing: #F59E0B;
+    --preparing-soft:rgba(245,158,11,.10);
+    --ready:     #34D399;
+    --ready-soft:rgba(52,211,153,.10);
+    --pending:   #FACC15;
+    --pending-soft:rgba(250,204,21,.10);
+    --radius:    10px;
+
+    /* Light-theme modal tokens */
+    --m-surface:    #FFFFFF;
+    --m-surface-2:  #F4F6FA;
+    --m-text:       #0F1623;
+    --m-muted:      #5B6573;
+    --m-line:       #E3E7EF;
+    --m-line-2:     #CBD2DD;
+    --m-accent:     #2563EB;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased;}
+
+  /* ── Header ── */
+  .header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.65rem 1.1rem;background:var(--surface);
+    border-bottom:1px solid var(--line);flex-shrink:0;height:56px;
+  }
+  .header-brand{display:flex;align-items:center;gap:.6rem;}
+  .header-mark{
+    width:30px;height:30px;border-radius:7px;background:var(--accent);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-size:.82rem;
+  }
+  .header-logo{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:.95rem;font-weight:700;letter-spacing:1.2px;line-height:1.1;}
+  .header-logo span{color:var(--accent);}
+  .header-role{font-size:.54rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.8px;margin-top:.18rem;font-weight:600;}
+
+  .header-stats{display:flex;gap:1.4rem;}
+  .hstat{text-align:center;}
+  .hstat-val{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:1.2rem;font-weight:700;line-height:1;}
+  .hstat-val.orange{color:var(--preparing);}
+  .hstat-val.green{color:var(--ready);}
+  .hstat-label{font-size:.54rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-top:.2rem;font-weight:600;}
+  .clock{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:.92rem;color:var(--muted);letter-spacing:1px;}
+
+  /* ── Grid ── */
+  .kitchen-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));
+    gap:.75rem;padding:.85rem;overflow-y:auto;
+    height:calc(100vh - 56px);align-content:start;
+  }
+
+  /* ── Compact card ── */
+  .order-card{
+    background:var(--surface);border-radius:var(--radius);
+    border:1px solid var(--line-2);overflow:hidden;
+    display:flex;flex-direction:column;cursor:pointer;
+    transition:transform .12s ease, border-color .15s ease, box-shadow .15s ease;
+    animation:cardIn .22s ease both;
+  }
+  @keyframes cardIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
+  .order-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.35);}
+  .order-card[data-status="pending"],
+  .order-card[data-status="paid"]      {border-color:rgba(250,204,21,.45);}
+  .order-card[data-status="preparing"] {border-color:rgba(245,158,11,.55);}
+  .order-card[data-status="ready"]     {border-color:rgba(52,211,153,.60);}
+
+  /* Card top — strict 2-column grid, perfect alignment */
+  .card-top{
+    display:grid;grid-template-columns:1fr auto;align-items:start;
+    padding:.6rem .75rem .5rem;gap:.5rem;
+  }
+  .card-left{display:flex;flex-direction:column;gap:.25rem;min-width:0;}
+  .card-right{display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;}
+
+  .card-orderno{
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:1.15rem;font-weight:700;
+    letter-spacing:1.2px;line-height:1;
+  }
+  .order-card[data-status="pending"]   .card-orderno,
+  .order-card[data-status="paid"]      .card-orderno{color:var(--pending);}
+  .order-card[data-status="preparing"] .card-orderno{color:var(--preparing);}
+  .order-card[data-status="ready"]     .card-orderno{color:var(--ready);}
+
+  .card-custno{
+    font-size:.56rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.3px;font-weight:600;
+  }
+  .card-custno b{color:var(--text);font-weight:700;font-size:.62rem;}
+
+  .card-elapsed{
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:.92rem;font-weight:600;
+    color:var(--preparing);letter-spacing:.5px;line-height:1;
+  }
+  .order-card[data-status="ready"] .card-elapsed{color:var(--ready);}
+  .card-elapsed-label{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;}
+
+  .card-items-count{
+    display:inline-flex;align-items:center;gap:.3rem;
+    font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;
+    background:var(--surface-2);padding:.2rem .45rem;border-radius:999px;
+    border:1px solid var(--line);
+  }
+  .card-items-count i{font-size:.5rem;opacity:.7;}
+
+  .card-actions{padding:.5rem .65rem .65rem;display:flex;gap:.4rem;}
+  .btn-action{
+    flex:1;padding:.5rem .3rem;border:1px solid;border-radius:7px;
+    background:transparent;cursor:pointer;
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:.62rem;font-weight:700;
+    letter-spacing:1.1px;text-transform:uppercase;
+    display:flex;align-items:center;justify-content:center;gap:.3rem;
+    transition:background .12s,color .12s,transform .08s;
+  }
+  .btn-action:active{transform:scale(.96);}
+  .btn-preparing{color:var(--preparing);border-color:rgba(245,158,11,.40);background:var(--preparing-soft);}
+  .btn-preparing.active,.btn-preparing:hover:not(:disabled){background:var(--preparing);color:#1a1003;}
+  .btn-ready{color:var(--ready);border-color:rgba(52,211,153,.40);background:var(--ready-soft);}
+  .btn-ready.active,.btn-ready:hover:not(:disabled){background:var(--ready);color:#04211a;}
+  .btn-action:disabled{opacity:.3;cursor:not-allowed;}
+  .btn-action i{font-size:.6rem;}
+
+  .ready-bar-wrap{height:3px;background:rgba(52,211,153,.15);}
+  .ready-bar{height:100%;background:var(--ready);transition:width 1s linear;}
+
+  .empty-state{
+    grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:280px;gap:.8rem;color:var(--muted);
+  }
+  .empty-state i{font-size:2.2rem;opacity:.5;}
+  .empty-state p{font-size:.7rem;text-transform:uppercase;letter-spacing:2.5px;font-weight:600;}
+
+  /* ─────────── LIGHT-THEME ENTERPRISE MODAL ─────────── */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(10,14,22,.55);
+    display:none;align-items:center;justify-content:center;z-index:100;
+    backdrop-filter:blur(4px);animation:fadeIn .15s ease;
+  }
+  .modal-overlay.open{display:flex;}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+  .modal{
+    width:min(460px,92vw);max-height:86vh;
+    background:var(--m-surface);color:var(--m-text);
+    border:1px solid var(--m-line);border-radius:14px;
+    display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 24px 64px rgba(10,14,22,.45),0 2px 6px rgba(10,14,22,.15);
+    animation:modalIn .2s cubic-bezier(.22,1,.36,1);
+    position:relative;
+  }
+  @keyframes modalIn{from{opacity:0;transform:translateY(10px) scale(.98);}to{opacity:1;transform:none;}}
+
+  /* Color accent bar at top of modal */
+  .modal::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:4px;
+    background:var(--m-accent);
+  }
+  .modal[data-status="pending"]::before,
+  .modal[data-status="paid"]::before     {background:#EAB308;}
+  .modal[data-status="preparing"]::before{background:#F59E0B;}
+  .modal[data-status="ready"]::before    {background:#10B981;}
+
+  .modal-header{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    padding:1rem 1.15rem .85rem;border-bottom:1px solid var(--m-line);
+    background:var(--m-surface);
+  }
+  .modal-header-left h3{
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:1.25rem;font-weight:700;
+    letter-spacing:1px;line-height:1;color:var(--m-text);
+  }
+  .modal-header-sub{
+    font-size:.62rem;color:var(--m-muted);text-transform:uppercase;
+    letter-spacing:1.4px;margin-top:.35rem;font-weight:600;
+  }
+  .modal-close{
+    background:var(--m-surface-2);color:var(--m-muted);
+    border:1px solid var(--m-line-2);width:30px;height:30px;border-radius:7px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:.8rem;transition:color .12s,border-color .12s,background .12s;
+  }
+  .modal-close:hover{color:var(--m-text);background:#E9EEF6;border-color:#9AA5B5;}
+
+  .modal-body{
+    padding:.5rem 1.15rem;overflow-y:auto;background:var(--m-surface);
+  }
+  .modal-item{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:.85rem;
+    padding:.7rem 0;border-bottom:1px solid var(--m-line);
+  }
+  .modal-item:last-child{border-bottom:none;}
+  .modal-item-name{
+    font-size:.82rem;font-weight:600;color:var(--m-text);line-height:1.3;
+  }
+  .modal-item-addons{
+    font-size:.66rem;color:var(--m-muted);margin-top:.22rem;line-height:1.35;font-weight:500;
+  }
+  .modal-item-qty{
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:1rem;font-weight:700;
+    color:var(--m-accent);min-width:2.2rem;text-align:right;
+    background:#EEF2FF;border:1px solid #DBE2FF;border-radius:6px;
+    padding:.2rem .5rem;line-height:1;align-self:flex-start;
+  }
+
+  .modal-meta{
+    padding:.7rem 1.15rem;background:var(--m-surface-2);
+    border-top:1px solid var(--m-line);
+    display:flex;justify-content:space-between;font-size:.62rem;color:var(--m-muted);
+    text-transform:uppercase;letter-spacing:1.2px;font-weight:600;
+  }
+  .modal-meta b{color:var(--m-text);font-weight:700;}
+
+  /* Light scrollbar inside modal */
+  .modal-body::-webkit-scrollbar{width:6px;}
+  .modal-body::-webkit-scrollbar-thumb{background:#CBD2DD;border-radius:4px;}
+
+  ::-webkit-scrollbar{width:5px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:4px;}
+
+  /* ── Card hierarchy: CUSTOMER number is the hero, order# is secondary ── */
+  .card-top { gap: .6rem !important; }
+  .card-left { gap: .15rem !important; }
+  .card-custno {
+    order: -1;
+    font-size: .58rem !important;
+    color: var(--muted) !important;
+    text-transform: uppercase; letter-spacing: 1.4px;
+    font-weight: 700 !important;
+    line-height: 1;
+  }
+  .card-custno b {
+    display: block;
+    font-size: 2.4rem !important;
+    line-height: 1 !important;
+    margin-top: .1rem;
+    letter-spacing: 1px;
+    font-weight: 800 !important;
+    font-variant-numeric: tabular-nums;
+  }
+  .order-card[data-status="pending"]   .card-custno b,
+  .order-card[data-status="paid"]      .card-custno b { color: var(--pending) !important; }
+  .order-card[data-status="preparing"] .card-custno b { color: var(--preparing) !important; }
+  .order-card[data-status="ready"]     .card-custno b { color: var(--ready) !important; }
+  .card-orderno {
+    font-size: .7rem !important;
+    font-weight: 600 !important;
+    letter-spacing: .8px !important;
+    opacity: .7;
+  }
+  /* Empty-state glyph rendering without Font Awesome */
+  .empty-glyph { font-size: 2.6rem; opacity: .55; }
+</style>
+<link rel="stylesheet" href="/css/theme-light.css"></head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="header-mark"><img src="./assets/logo.jpg" alt="" srcset="" style="width: 100%; height: 100%; object-fit: contain;" ></div>
+    <div>
+      <div class="header-logo">Jonel's <span>Inasalan</span></div>
+      <div class="header-role" data-area-label>Kitchen Display System</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="hstat-val orange" id="cnt-preparing">0</div>
+      <div class="hstat-label">Preparing</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val green" id="cnt-ready">0</div>
+      <div class="hstat-label">Ready</div>
+    </div>
+  </div>
+  <div class="clock" id="clock">00:00:00</div>
+</div>
+
+<div class="kitchen-grid" id="kitchen-grid">
+  <div class="empty-state">
+    <div class="empty-glyph">🍽</div>
+    <p>No active orders</p>
+  </div>
+</div>
+
+<!-- Light-theme enterprise modal -->
+<div class="modal-overlay" id="order-modal" role="dialog" aria-modal="true">
+  <div class="modal" id="modal-card">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <h3 id="modal-orderno">Order #—</h3>
+        <div class="modal-header-sub" id="modal-subtitle">Customer · —</div>
+      </div>
+      <button class="modal-close" id="modal-close" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body" id="modal-items"></div>
+    <div class="modal-meta">
+      <span>Placed: <b id="modal-time">—</b></span>
+      <span>Status: <b id="modal-status">—</b></span>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/kitchen.js"></script>
+</body>
+</html>

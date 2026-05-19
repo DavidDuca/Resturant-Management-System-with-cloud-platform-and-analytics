@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jonel's Inasalan — Non-Grilled Order Status</title>
+<style>
+  :root{
+    --bg:#0A0C0F; --col-prep:#001a18; --col-ready:#001A0D;
+    --accent:#14B8A6; --green:#00E676;
+    --text:#FFFFFF; --muted:rgba(255,255,255,.5); --border:rgba(255,255,255,.07);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden;
+    -webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
+
+  .tv-header{display:flex;align-items:center;justify-content:space-between;
+    padding:.9rem 2rem;background:#111418;border-bottom:3px solid rgba(255,255,255,.05)}
+  .tv-logo{font-size:1.5rem;font-weight:800;letter-spacing:-.01em;line-height:1}
+  .tv-logo span{color:var(--accent)}
+  .tv-tagline-sub{font-size:.65rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:.3rem;font-weight:600}
+  .tv-header-center{text-align:center}
+  .tv-tagline{font-size:.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:4px;font-weight:600}
+  .tv-clock{font-size:1.5rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  .tv-body{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 74px - 44px)}
+  .tv-col{display:flex;flex-direction:column;overflow:hidden}
+  .tv-col.preparing{background:var(--col-prep);border-right:2px solid var(--border)}
+  .tv-col.ready{background:var(--col-ready)}
+
+  .col-header{display:flex;align-items:center;justify-content:space-between;
+    padding:1rem 1.5rem;border-bottom:1px solid var(--border);flex-shrink:0}
+  .col-title{font-size:1.5rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+  .tv-col.preparing .col-title{color:var(--accent)}
+  .tv-col.ready .col-title{color:var(--green)}
+  .col-count{font-size:.95rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  .order-list{flex:1;overflow-y:auto;padding:1rem;
+    display:grid;grid-template-columns:repeat(auto-fill, minmax(170px, 1fr));
+    gap:.85rem;align-content:start}
+
+  .order-tile{
+    border-radius:16px;padding:.9rem 1rem 1rem;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:140px;text-align:center;
+    animation:tileIn .35s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes tileIn{from{opacity:0;transform:translateY(-12px) scale(.96)}to{opacity:1;transform:none}}
+  .tv-col.preparing .order-tile{background:rgba(20,184,166,.1);border:1.5px solid rgba(20,184,166,.28)}
+  .tv-col.ready .order-tile{background:rgba(0,230,118,.1);border:1.5px solid rgba(0,230,118,.32);
+    animation:tileIn .35s cubic-bezier(.22,1,.36,1) both, readyPulse 2.4s ease-in-out infinite}
+  @keyframes readyPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,0)}50%{box-shadow:0 0 0 10px rgba(0,230,118,.10)}}
+
+  .tile-label{font-size:.65rem;text-transform:uppercase;letter-spacing:3px;
+    margin-bottom:.4rem;font-weight:700;opacity:.75}
+  .tv-col.preparing .tile-label{color:rgba(20,184,166,.85)}
+  .tv-col.ready .tile-label{color:rgba(0,230,118,.85)}
+
+  .tile-custno-big{font-size:clamp(3.6rem, 5.5vw, 5.5rem);font-weight:800;
+    letter-spacing:-.02em;line-height:.95;font-variant-numeric:tabular-nums}
+  .tv-col.preparing .tile-custno-big{color:var(--accent)}
+  .tv-col.ready .tile-custno-big{color:var(--green)}
+
+  .empty-col{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;min-height:200px;color:var(--muted);gap:.75rem;
+    font-size:.8rem;text-transform:uppercase;letter-spacing:2px;font-weight:600}
+  .empty-icon{font-size:2.6rem;opacity:.4}
+
+  .tv-ticker{position:fixed;bottom:0;left:0;right:0;height:44px;
+    background:rgba(0,0,0,.65);border-top:1px solid var(--border);
+    padding:.5rem 1rem;display:flex;align-items:center;gap:1rem}
+  .ticker-label{font-size:.7rem;text-transform:uppercase;letter-spacing:2px;
+    color:var(--accent);white-space:nowrap;font-weight:700}
+  .ticker-msg{font-size:.85rem;color:var(--muted);font-weight:500}
+  ::-webkit-scrollbar{width:0;height:0}
+</style>
+</head>
+<body data-display-area="kitchen" data-voice-auto="1">
+
+<div class="tv-header">
+  <div>
+    <div class="tv-logo">Jonel's <span>Inasalan</span></div>
+    <div class="tv-tagline-sub">Sizzling &amp; Grill</div>
+  </div>
+  <div class="tv-header-center">
+    <div class="tv-tagline">Non-Grilled Order Status</div>
+  </div>
+  <div class="tv-clock" id="tv-clock">00:00</div>
+</div>
+
+<div class="tv-body">
+  <div class="tv-col preparing">
+    <div class="col-header">
+      <div class="col-title">Preparing</div>
+      <!-- NOTE: IDs aligned to tv.js (list-kit-prep / cnt-kit-prep) -->
+      <div class="col-count"><span id="cnt-kit-prep">0</span> orders</div>
+    </div>
+    <div class="order-list" id="list-kit-prep">
+      <div class="empty-col">
+        <div class="empty-icon">🍳</div>
+        <span>No orders preparing</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tv-col ready">
+    <div class="col-header">
+      <div class="col-title">Ready to Pick Up</div>
+      <div class="col-count"><span id="cnt-kit-ready">0</span> orders</div>
+    </div>
+    <div class="order-list" id="list-kit-ready">
+      <div class="empty-col">
+        <div class="empty-icon">🛎</div>
+        <span>No orders ready yet</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tv-ticker">
+  <span class="ticker-label">ℹ Notice</span>
+  <span class="ticker-msg">Look for your Customer Number on this screen. Thank you for dining at Jonel's Inasalan!</span>
+</div>
+
+<script>
+(function(){
+  if (!('speechSynthesis' in window)) return;
+  window.VOICE_ENABLED = true;
+  function unlock(){
+    try { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); } catch(e){}
+    ['click','keydown','touchstart','mousemove'].forEach(ev => window.removeEventListener(ev, unlock));
+  }
+  try { unlock(); } catch(e){}
+  ['click','keydown','touchstart','mousemove'].forEach(ev => window.addEventListener(ev, unlock, { once:true }));
+})();
+</script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/tv.js"></script>
+</body>
+</html>
